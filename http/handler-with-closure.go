@@ -2,9 +2,13 @@
 
 package main
 
+package main
+
 import (
 	"net/http"
+	_ "github.com/lib/pq"
 	"database/sql"
+	"time"
 	"fmt"
 	"log"
 	"os"
@@ -12,16 +16,16 @@ import (
 
 func helloHandler(db *sql.DB) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    		var name string
-    		// Execute the query.
-    		row := db.QueryRow("SELECT myname FROM mytable")
-    		if err := row.Scan(&name); err != nil {
-        		http.Error(w, err.Error(), 500)
-        		return
-    		}
-    		// Write it back to the client.
-    		fmt.Fprintf(w, "hi %s!\n", name)
-    	})
+		var name string
+		// Execute the query.
+		row := db.QueryRow("SELECT email FROM contacts")
+		if err := row.Scan(&name); err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		// Write it back to the client.
+		fmt.Fprintf(w, "hi %s!\n", name)
+	})
 }
 
 func withMetrics(l *log.Logger, next http.Handler) http.Handler {
@@ -34,14 +38,14 @@ func withMetrics(l *log.Logger, next http.Handler) http.Handler {
 
 func main() {
 	// Open our database connection.
-	db, err := sql.Open("postgres", "…")
+	db, err := sql.Open("postgres", "postgres://localhost/postgres?sslmode=disable")
 	if err != nil {
 		log.Fatal(err)
 	}
 	// Create our logger
 	logger := log.New(os.Stdout, "", 0)
 	// Register our handler.
-	http.Handle("/hello", helloHandler(db))
+	http.Handle("/", helloHandler(db))
 	// Register our handler with metrics logging
 	http.Handle("/hello_again", withMetrics(logger, helloHandler(db)))
 	http.ListenAndServe(":8080", nil)
